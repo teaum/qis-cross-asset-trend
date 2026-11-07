@@ -12,9 +12,11 @@ def compute_annualized_volatility(indice) :
     deviation = daily_returns.std()
     return deviation * 252**0.5
 
-def compute_sharpe_ratio(returns, vol):
-    # rf = 0 for now: no cash return in the index yet
-    return returns/vol
+def compute_sharpe_ratio(indice, cash_returns):
+    # Daily return in excess of T-bills, annualised
+    daily_returns = indice.pct_change(fill_method=None)
+    excess = (daily_returns - cash_returns).dropna()
+    return excess.mean() / excess.std() * 252**0.5
 
 def compute_max_drawdown(indice) :
     # Worst fall from a previous peak (negative number)

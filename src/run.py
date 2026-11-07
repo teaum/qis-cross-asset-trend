@@ -1,22 +1,22 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from config import load_prices
+from config import load_prices, load_cash
 from trend_signal import create_signal
-from backtest import weight_signals, compute_daily_returns, compute_daily_weights, compute_indice
+from backtest import weight_signals, compute_daily_returns, compute_daily_weights, compute_indice, compute_daily_cash_returns
 from metrics import compute_annualized_returns, compute_annualized_volatility, compute_sharpe_ratio, compute_max_drawdown, compute_calmar
 
 # How each metric is printed
 FORMATS = {
     "Ann. return": "{:.2%}",
     "Volatility": "{:.2%}",
-    "Sharpe (rf 0)": "{:.2f}",
+    "Sharpe": "{:.2f}",
     "Max drawdown": "{:.2%}",
     "Calmar": "{:.2f}",
 }
 
 
-def compute_metrics(indice):
+def compute_metrics(indice, cash_return):
     # Headline metrics for one index level series
     annu_returns = compute_annualized_returns(indice)
     annu_vol = compute_annualized_volatility(indice)
@@ -24,7 +24,7 @@ def compute_metrics(indice):
     return {
         "Ann. return": annu_returns,
         "Volatility": annu_vol,
-        "Sharpe (rf 0)": compute_sharpe_ratio(annu_returns, annu_vol),
+        "Sharpe": compute_sharpe_ratio(indice, cash_return),
         "Max drawdown": max_drawdown,
         "Calmar": compute_calmar(annu_returns, max_drawdown),
     }
@@ -32,13 +32,15 @@ def compute_metrics(indice):
 
 def main():
     prices = load_prices()
+    cash = load_cash()
     daily_returns = compute_daily_returns(prices)
+    cash_return = compute_daily_cash_returns(cash, daily_returns.index)
 
     # Trend index: 12-month momentum, long/flat
     signal = create_signal(prices)
     weights = weight_signals(signal)
     daily_weights = compute_daily_weights(weights, daily_returns)
-    indice = compute_indice(daily_weights, daily_returns)
+    indice = compute_indice(daily_weights, daily_returns, cash_returns=cash_return)
 
     # Benchmark: same ETFs and dates, always invested (signal = 1 everywhere)
     signal_benchmark = pd.DataFrame(1, index=signal.index, columns=signal.columns)
@@ -47,7 +49,7 @@ def main():
     indice_benchmark = compute_indice(daily_weights_benchmark, daily_returns)
 
     # Side-by-side metrics table
-    results = {"Trend": compute_metrics(indice), "Equal weight": compute_metrics(indice_benchmark)}
+    results = {"Trend": compute_metrics(indice, cash_return), "Equal weight": compute_metrics(indice_benchmark, cash_return)}
     table = pd.DataFrame({
         name: {k: FORMATS[k].format(v) for k, v in metrics.items()}
         for name, metrics in results.items()
