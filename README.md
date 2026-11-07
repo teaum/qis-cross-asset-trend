@@ -21,6 +21,7 @@ Daily dividend-adjusted closes from Yahoo Finance (`yfinance`, `auto_adjust=True
 
 | File | Role |
 |---|---|
+| `src/config.py` | Data paths and the price snapshot used by every script |
 | `src/download_data.py` | Downloads prices and saves a dated CSV snapshot |
 | `src/check_data.py` | Data quality checks: start dates, missing values, largest daily moves |
 | `src/trend_signal.py` | Monthly 12-month momentum signal (0/1 per ETF) |
